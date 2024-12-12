@@ -24,6 +24,7 @@ void main() async {
   // API routes
   router.get('/movies', getMovies); // Get list of movies
   router.get('/movies/<id>', getMovieById); // Get a single movie by ID
+  router.put('/movies/<id>', updateMovieById); // Get a single movie by ID
   router.post('/movies', createMovie); // Create a new movie
   router.delete('/movies/<id>', deleteMovie); // Delete a movie by ID
 
@@ -138,6 +139,41 @@ Future<Response> createMovie(Request request) async {
     return Response.internalServerError(body: 'Error creating movie: $e');
   }
 }
+// PUT /movies/<id> - Update a movie by ID
+Future<Response> updateMovieById(Request request, String id) async {
+  final conn = await Connection.open(Endpoint(
+    host: 'localhost',
+    database: 'movie',
+    username: 'postgres',
+    password: '1234',
+  ));
+  try {
+    final payload = await request.readAsString();
+    final data = jsonDecode(payload);
+
+    // Extract data from the request
+    final title = data['title'];
+    final score = data['score'];
+    final genre = data['genre'];
+    final image = data['image'];
+
+    // Update query with parameterized placeholders
+    String query =
+        'UPDATE movies SET title = \$1, score = \$2, genre = \$3, image = \$4 WHERE id = \$5';
+    final result = await conn.execute(
+      query,
+      parameters: [title, score, genre, image, int.parse(id)],
+    );
+
+    // if (result.isEmpty) {
+    //   return Response.notFound('Movie not found');
+    // }
+
+    return Response.ok('Movie updated successfully');
+  } catch (e) {
+    return Response.internalServerError(body: 'Error updating movie: $e');
+  }
+}
 
 // DELETE /movies/<id> - Delete a movie by ID
 Future<Response> deleteMovie(Request request, String id) async {
@@ -160,3 +196,4 @@ Future<Response> deleteMovie(Request request, String id) async {
     return Response.internalServerError(body: 'Error deleting movie: $e');
   }
 }
+
